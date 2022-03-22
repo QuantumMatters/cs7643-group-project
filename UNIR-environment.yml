@@ -1,0 +1,18 @@
+name: UNIR
+channels:
+  - conda-forge
+  - pytorch
+dependencies:
+  - python=3.7
+  - pytorch
+  - torchvision
+  - numpy
+  - pyyaml
+  - pytorch-ignite>=0.2.0
+  - imageio
+  - pip
+  - pip:
+    - sacred
+    - prettytable
+    - scikit-image
+    - pymongo
