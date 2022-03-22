@@ -17,7 +17,7 @@ unsupervised adversarial image reconstruction paper.
 4. Navigate to UNIR/unir/factory/dataset.py and set the value of line 19, 'filename': to the path to CelebA images.
 5. Change all import statements from unsup_it to unir (the name of the directory containing the source code)
 6. Edit line 46 in main.py to `use_mongo = False`
-7. If running on a machine without a CPU, edit line 42 `device = "cpu"`
+7. If running on a machine without a GPU, edit line 42 `device = "cpu"`
 
 
 # Contributors
