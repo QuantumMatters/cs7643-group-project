@@ -1,6 +1,6 @@
 import torch.nn as nn
 
-import unsup_it.module.losses as losses
+import unir.module.losses as losses
 from .closure import *
 
 

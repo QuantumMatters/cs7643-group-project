@@ -20,9 +20,12 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 torch.backends.cudnn.benchmark = True
 
+import warnings
+warnings.filterwarnings("ignore")
+
 ex = Experiment('unsup')
-time_str = datetime.now().strftime("%a-%b-%d-%H:%M:%S")
-exp_dir = os.path.join("...", ex.path, time_str)
+time_str = datetime.now().strftime("%a-%b-%d-%H%M%S")
+exp_dir = "experiments/" + time_str
 os.makedirs(exp_dir)
 
 
@@ -39,11 +42,11 @@ def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
 
 @ex.config
 def config():
-    device = "cuda:0"
+    device = "cuda"
     nepochs = 800
     exp_dir = exp_dir
     debug = False
-    use_mongo = True
+    use_mongo = False
     if use_mongo and not debug:
         ex.observers.append(external.get_mongo_obs())
     else:
@@ -61,6 +64,12 @@ def config():
     create_closure = closure_factory.closure(ex)
     create_scheduler = lr_scheduler_factory.lr_scheduler(ex)
 
+
+def write_epoch_num_file(epoch_num):
+    """Used to record the last achieved epoch when saving models"""
+    fn = "/content/drive/MyDrive/CS7643-GroupProject/UNIR/epoch_num.txt"
+    with open(fn, "w") as f:
+        f.write(str(epoch_num))
 
 @ex.automain
 def main(_run, nepochs, niter, device, _config, create_datasets, create_modules, create_closure, create_scheduler,
@@ -81,7 +90,7 @@ def main(_run, nepochs, niter, device, _config, create_datasets, create_modules,
     best_mse = float('inf')
     for epoch in range(1, nepochs + 1):
 
-        logger.info('### Starting epoch n°{} '.format(epoch))
+        logger.info('### Starting epoch nÂ°{} '.format(epoch))
         for split, dl in dsets.items():
 
             iter = 0
@@ -137,3 +146,9 @@ def main(_run, nepochs, niter, device, _config, create_datasets, create_modules,
                     'state_dict': mods['gen'].state_dict(),
                     'best_MSE': best_mse,
                 }, is_best)
+                
+        # Save models
+        torch.save(mods['gen'].state_dict(), "/content/drive/MyDrive/CS7643-GroupProject/UNIR/latest_gen.pth")
+        torch.save(mods['dis'].state_dict(), "/content/drive/MyDrive/CS7643-GroupProject/UNIR/latest_dis.pth")
+        write_epoch_num_file(epoch)
+        print("Models saved")

@@ -3,8 +3,8 @@ import math
 
 import torch
 
-import unsup_it.utils.helpers as helpers
-from unsup_it.module.SAGAN import ResNetGenerator, ResNetDiscriminator
+import unir.utils.helpers as helpers
+from unir.module.SAGAN import ResNetGenerator, ResNetDiscriminator
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -120,6 +120,18 @@ def UnsupIR(ex):
 
         gen, optim_gen = create_generator(device=device, nc=nc, corruption=corruption)
         dis, optim_dis = create_discriminator(device=device, nc=nc * closure_mult)
+        
+        try:
+            #gen.load_state_dict(torch.load("latest_gen.pth"))
+            pass
+        except:
+            print("Couldnt load pretrained generator")
+            
+        try:
+            #dis.load_state_dict(torch.load("latest_dis.pth"))
+            pass
+        except:
+            print("Couldnt load pretrained discriminator")
 
         modules = {
             'gen': gen,

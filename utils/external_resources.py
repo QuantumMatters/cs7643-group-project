@@ -1,6 +1,6 @@
 import json
 
-import gridfs
+#import gridfs
 from pymongo import MongoClient
 
 # from sacred.observers import MongoObserver

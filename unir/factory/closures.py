@@ -1,5 +1,5 @@
-from unsup_it.closures import *
-from unsup_it.utils.helpers import *
+from unir.closures import *
+from unir.utils.helpers import *
 
 closure_default_config = {
     'common': {
