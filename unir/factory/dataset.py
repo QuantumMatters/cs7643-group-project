@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 dataset_default = {
     'common': {
         'batch_size': 16,
-        'num_workers': 0,
+        'num_workers': 8,
     },
     'celebA': {
         'filename': "data/img_align_celeba/img_align_celeba",
