@@ -1,6 +1,7 @@
 import numpy as np
 import torch
-
+import warnings
+warnings.filterwarnings(action='ignore')
 
 class KeepPatch(object):
     def __init__(self, size_percent=0.5, im_size=64):
