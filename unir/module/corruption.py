@@ -32,7 +32,8 @@ class KeepPatch(object):
 
         if theta is None:
             mask = self.sample_theta(im_shape=x.shape, seed=seed)
-            mask = torch.tensor(mask, device=device, dtype=torch.uint8, requires_grad=False)
+            mask = torch.tensor(mask, device=device, dtype=torch.bool, requires_grad=False)
+            #mask = torch.tensor(mask, device=device, dtype=torch.uint8, requires_grad=False)
         else:
             mask = theta
 
@@ -62,7 +63,8 @@ class RemovePixel(object):
 
         if theta is None:
             mask = self.sample_theta(im_shape=x.shape, seed=seed)
-            mask = torch.tensor(mask, device=device, dtype=torch.uint8, requires_grad=False)
+            mask = torch.tensor(mask, device=device, dtype=torch.bool, requires_grad=False)
+            #mask = torch.tensor(mask, device=device, dtype=torch.uint8, requires_grad=False)
         else:
             mask = theta
 
@@ -97,7 +99,8 @@ class RemovePixelDark(object):
 
         if theta is None:
             mask = self.sample_theta(im_shape=x.shape, seed=seed)
-            mask = torch.tensor(mask, device=device, dtype=torch.uint8, requires_grad=False)
+            mask = torch.tensor(mask, device=device, dtype=torch.bool, requires_grad=False)
+            #mask = torch.tensor(mask, device=device, dtype=torch.uint8, requires_grad=False)
         else:
             mask = theta
 
