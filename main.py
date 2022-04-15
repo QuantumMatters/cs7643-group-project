@@ -89,10 +89,37 @@ def main(_run, nepochs, niter, device, _config, create_datasets, create_modules,
     logger.info('### Begin Training ###')
     best_mse = float('inf')
 
+    train_loss_Gs_list = []
+    train_loss_Ds_list = []
+    train_loss_MSEs_list = []
+    test_loss_Gs_list = []
+    test_loss_Ds_list = []
+    test_loss_MSEs_list = []
+
+    # create a file to record losses and write the header
+    with open(exp_dir + "/losses.csv", "w") as f:
+        f.write("epoch,"
+                "train_loss_G,"
+                "train_loss_D,"
+                "train_loss_MSE,"
+                "test_loss_G,"
+                "test_loss_D,"
+                "test_loss_MSE"
+            )
+
     start = starting_epoch or 1
     for epoch in range(start, nepochs + 1):
 
+        # these will record the losses by minibatch and report the average across minibatches
+        train_loss_Gs = AverageMeter()
+        train_loss_Ds = AverageMeter()
+        train_loss_MSEs = AverageMeter()
+        test_loss_Gs = AverageMeter()
+        test_loss_Ds = AverageMeter()
+        test_loss_MSEs = AverageMeter()
         logger.info('### Starting epoch n°{} '.format(epoch))
+
+        # there are just two iterations here: (1) train, (2) test
         for split, dl in dsets.items():
 
             iter = 0
@@ -100,6 +127,8 @@ def main(_run, nepochs, niter, device, _config, create_datasets, create_modules,
                 batch_time = AverageMeter()
                 data_time = AverageMeter()
                 end = time.time()
+
+                # iterate through the minibatches
                 for batch in dl:
                     print_freq = niter[split] / 5
                     for var_name, var in batch.items():
@@ -108,14 +137,31 @@ def main(_run, nepochs, niter, device, _config, create_datasets, create_modules,
                     closure.forward(batch)
                     if split == 'train':
                         closure.backward()
+                        train_loss_Gs.update(closure.loss_G)
+                        train_loss_Ds.update(closure.loss_D)
+                        train_loss_MSEs.update(closure.loss_MSE)
+                    else:
+                        test_loss_Gs.update(closure.loss_G)
+                        test_loss_Ds.update(closure.loss_D)
+                        test_loss_MSEs.update(closure.loss_MSE)
+
                     batch_time.update(time.time() - end)
                     end = time.time()
 
                     if iter % print_freq == 0:
                         logger.info('Epoch: [{0}] {split} [{1}/{2}]\t'
                                     'Time {batch_time.sum:.3f} ({batch_time.avg:.3f})\t'
-                                    'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'.format(
+                                    'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
+                                    'Train Loss_G {train_loss_Gs.val:.3f} ({train_loss_Gs.avg:.3f})\t'
+                                    'Train Loss_D {train_loss_Ds.val:.3f} ({train_loss_Ds.avg:.3f})\t'
+                                    'Train Loss_MSE {train_loss_MSEs.val:.3f} ({train_loss_MSEs.avg:.3f})\t'
+                                    'Test Loss_G {test_loss_Gs.val:.3f} ({test_loss_Gs.avg:.3f})\t'
+                                    'Test Loss_D {test_loss_Ds.val:.3f} ({test_loss_Ds.avg:.3f})\t'
+                                    'Test Loss_MSE {test_loss_MSEs.val:.3f} ({test_loss_MSEs.avg:.3f})\t'.format(
                             epoch, iter, niter[split], split=split, batch_time=batch_time, data_time=data_time,
+                            train_loss_Gs=train_loss_Gs, train_loss_Ds=train_loss_Ds,
+                            train_loss_MSEs=train_loss_MSEs, test_loss_Gs=test_loss_Gs, 
+                            test_loss_Ds=test_loss_Ds, test_loss_MSEs=test_loss_MSEs,
                         ))
                     iter += 1
 
@@ -153,9 +199,29 @@ def main(_run, nepochs, niter, device, _config, create_datasets, create_modules,
                     'state_dict': mods['gen'].state_dict(),
                     'best_MSE': best_mse,
                 }, is_best, exp_dir)
-                
+
+        # Record losses
+        train_loss_Gs_list.append(train_loss_Gs.avg)
+        train_loss_Ds_list.append(train_loss_Ds.avg)
+        train_loss_MSEs_list.append(train_loss_MSEs.avg)
+        test_loss_Gs_list.append(test_loss_Gs.avg)
+        test_loss_Ds_list.append(test_loss_Ds.avg)
+        test_loss_MSEs_list.append(test_loss_MSEs.avg)
+
         # Save models
-        torch.save(mods['gen'].state_dict(), gen_out_path or exp_dir + "latest_gen.pth")
-        torch.save(mods['dis'].state_dict(), dis_out_path or exp_dir + "latest_dis.pth")
-        write_epoch_num_file(exp_dir + "epoch_num.txt", epoch)
+        torch.save(mods['gen'].state_dict(), gen_out_path or exp_dir + "/latest_gen.pth")
+        torch.save(mods['dis'].state_dict(), dis_out_path or exp_dir + "/latest_dis.pth")
+        write_epoch_num_file(exp_dir + "/epoch_num.txt", epoch)
         print("Models saved")
+
+        # write losses to file
+        with open(exp_dir + "/losses.csv", "a") as f:
+            f.write(",".join(
+                (epoch,
+                train_loss_Gs_list[-1],
+                train_loss_Ds_list[-1],
+                train_loss_MSEs_list[-1],
+                test_loss_Gs_list[-1],
+                test_loss_Ds_list[-1],
+                test_loss_MSEs_list[-1]
+                )))
