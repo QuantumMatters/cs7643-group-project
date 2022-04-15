@@ -89,13 +89,6 @@ def main(_run, nepochs, niter, device, _config, create_datasets, create_modules,
     logger.info('### Begin Training ###')
     best_mse = float('inf')
 
-    train_loss_Gs_list = []
-    train_loss_Ds_list = []
-    train_loss_MSEs_list = []
-    test_loss_Gs_list = []
-    test_loss_Ds_list = []
-    test_loss_MSEs_list = []
-
     # create a file to record losses and write the header
     with open(exp_dir + "/losses.csv", "w") as f:
         f.write("epoch,"
@@ -104,7 +97,7 @@ def main(_run, nepochs, niter, device, _config, create_datasets, create_modules,
                 "train_loss_MSE,"
                 "test_loss_G,"
                 "test_loss_D,"
-                "test_loss_MSE"
+                "test_loss_MSE\n"
             )
 
     start = starting_epoch or 1
@@ -200,14 +193,6 @@ def main(_run, nepochs, niter, device, _config, create_datasets, create_modules,
                     'best_MSE': best_mse,
                 }, is_best, exp_dir)
 
-        # Record losses
-        train_loss_Gs_list.append(train_loss_Gs.avg)
-        train_loss_Ds_list.append(train_loss_Ds.avg)
-        train_loss_MSEs_list.append(train_loss_MSEs.avg)
-        test_loss_Gs_list.append(test_loss_Gs.avg)
-        test_loss_Ds_list.append(test_loss_Ds.avg)
-        test_loss_MSEs_list.append(test_loss_MSEs.avg)
-
         # Save models
         torch.save(mods['gen'].state_dict(), gen_out_path or exp_dir + "/latest_gen.pth")
         torch.save(mods['dis'].state_dict(), dis_out_path or exp_dir + "/latest_dis.pth")
@@ -216,12 +201,14 @@ def main(_run, nepochs, niter, device, _config, create_datasets, create_modules,
 
         # write losses to file
         with open(exp_dir + "/losses.csv", "a") as f:
-            f.write(",".join(
-                (epoch,
-                train_loss_Gs_list[-1],
-                train_loss_Ds_list[-1],
-                train_loss_MSEs_list[-1],
-                test_loss_Gs_list[-1],
-                test_loss_Ds_list[-1],
-                test_loss_MSEs_list[-1]
-                )))
+            f.write("{epoch},"
+                    "{train_loss_Gs.avg:.3f},"
+                    "{train_loss_Ds.avg:.3f},"
+                    "{train_loss_MSEs.avg:.3f},"
+                    "{test_loss_Gs.avg:.3f},"
+                    "{test_loss_Ds.avg:.3f},"
+                    "{test_loss_MSEs.avg:.3f}\n".format(
+                        epoch=epoch,
+                        train_loss_Gs=train_loss_Gs, train_loss_Ds=train_loss_Ds,
+                        train_loss_MSEs=train_loss_MSEs, test_loss_Gs=test_loss_Gs, 
+                        test_loss_Ds=test_loss_Ds, test_loss_MSEs=test_loss_MSEs))
