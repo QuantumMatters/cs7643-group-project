@@ -25,7 +25,7 @@ warnings.filterwarnings("ignore")
 
 ex = Experiment('unsup')
 
-def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
+def save_checkpoint(state, is_best, exp_dir, filename='checkpoint.pth.tar'):
     path = os.path.join(exp_dir, filename)
     try:
         torch.save(state, path)
@@ -90,7 +90,7 @@ def main(_run, nepochs, niter, device, _config, create_datasets, create_modules,
     logger.info('### Begin Training ###')
     best_mse = float('inf')
 
-    start = last_epoch or 1
+    start = starting_epoch or 1
     for epoch in range(start, nepochs + 1):
 
         logger.info('### Starting epoch n°{} '.format(epoch))
@@ -126,13 +126,18 @@ def main(_run, nepochs, niter, device, _config, create_datasets, create_modules,
             meters, images = closure.step()
             ims = torch.cat([v for k, v in images.items() if v.dim() == 4 and v.shape[1] in [1, 3]])
             path = exp_dir + '/' + split + '_' + str(epoch) + '.png'
-            try:
-                vutils.save_image(ims, path, scale_each=True, normalize=True, nrow=dl.batch_size)
-                logger.info("saving images in {path}".format(path=path))
-            except:
-                logger.warning("SAVING IMAGES FAILED")
+            if epoch%50 ==0:
+              vutils.save_image(ims, path, nrow=dl.batch_size)
+              logger.info("saving images in {path}".format(path=path))
+            else:
+              pass
+            #try:
+                #vutils.save_image(ims, path, scale_each=True, normalize=True, nrow=dl.batch_size)
+                #logger.info("saving images in {path}".format(path=path))
+            #except:
+                #logger.warning("SAVING IMAGES FAILED")
 
-                pass
+                #pass
             string_to_print = '*** '
             for name, v in meters.items():
                 tag = 'meters' + '/' + name + '/' + split
@@ -148,7 +153,7 @@ def main(_run, nepochs, niter, device, _config, create_datasets, create_modules,
                     'epoch': epoch + 1,
                     'state_dict': mods['gen'].state_dict(),
                     'best_MSE': best_mse,
-                }, is_best)
+                }, is_best, exp_dir)
                 
         # Save models
         torch.save(mods['gen'].state_dict(), gen_out_path or exp_dir + "latest_gen.pth")
