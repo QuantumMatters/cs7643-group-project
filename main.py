@@ -24,10 +24,6 @@ import warnings
 warnings.filterwarnings("ignore")
 
 ex = Experiment('unsup')
-time_str = datetime.now().strftime("%a-%b-%d-%H%M%S")
-exp_dir = "experiments/" + time_str
-os.makedirs(exp_dir)
-
 
 def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
     path = os.path.join(exp_dir, filename)
@@ -44,7 +40,8 @@ def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
 def config():
     device = "cuda"
     nepochs = 800
-    exp_dir = exp_dir
+    time_str = datetime.now().strftime("%a-%b-%d-%H%M%S")
+    exp_dir = "experiments/" + time_str
     debug = False
     use_mongo = False
     if use_mongo and not debug:
@@ -58,7 +55,8 @@ def config():
         'train': 400,
         'test': 20,
     }
-
+    dis_path = None
+    gen_path = None
     create_datasets = dataset_factory.dataset(ex)
     create_modules = module_factory.UnsupIR(ex)
     create_closure = closure_factory.closure(ex)
@@ -73,7 +71,9 @@ def write_epoch_num_file(epoch_num):
 
 @ex.automain
 def main(_run, nepochs, niter, device, _config, create_datasets, create_modules, create_closure, create_scheduler,
-         exp_dir):
+         exp_dir, gen_out_path=None, dis_out_path=None, starting_epoch=None,
+        ):
+    os.makedirs(exp_dir, exist_ok=True)
     shutil.make_archive('./unir', 'zip', './unir')
     ex.add_resource("./unir.zip")
 
@@ -82,15 +82,18 @@ def main(_run, nepochs, niter, device, _config, create_datasets, create_modules,
     dsets, corruption, nc = create_datasets()
     logger.info('### Model and Optim ###')
 
-    mods, optims = create_modules(nc=nc, corruption=_config["corruption"], closure_name=_config['closure']['name'])
+    mods, optims = create_modules(nc=nc, corruption=_config["corruption"], closure_name=_config['closure']['name'],
+                                  gen_path=_config["gen_path"], dis_path=_config["dis_path"])
     dict_scheduler = create_scheduler(dict_optim=optims)
     closure = create_closure(mods, optims, device, measurement=corruption, scheduler=dict_scheduler)
 
     logger.info('### Begin Training ###')
     best_mse = float('inf')
-    for epoch in range(1, nepochs + 1):
 
-        logger.info('### Starting epoch nÂ°{} '.format(epoch))
+    start = last_epoch or 1
+    for epoch in range(start, nepochs + 1):
+
+        logger.info('### Starting epoch n°{} '.format(epoch))
         for split, dl in dsets.items():
 
             iter = 0
@@ -148,7 +151,7 @@ def main(_run, nepochs, niter, device, _config, create_datasets, create_modules,
                 }, is_best)
                 
         # Save models
-        torch.save(mods['gen'].state_dict(), "/content/drive/MyDrive/CS7643-GroupProject/UNIR/latest_gen.pth")
-        torch.save(mods['dis'].state_dict(), "/content/drive/MyDrive/CS7643-GroupProject/UNIR/latest_dis.pth")
+        torch.save(mods['gen'].state_dict(), gen_out_path or exp_dir + "latest_gen.pth")
+        torch.save(mods['dis'].state_dict(), dis_out_path or exp_dir + "latest_dis.pth")
         write_epoch_num_file(epoch)
         print("Models saved")

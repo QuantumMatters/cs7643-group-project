@@ -113,7 +113,7 @@ def UnsupIR(ex):
     create_discriminator = discriminator(ex)
 
     @ex.capture
-    def create(device, nc, corruption, closure_name):
+    def create(device, nc, corruption, closure_name, gen_path=None, dis_path=None):
         # As we concatenate the sample for the pairde variant, we have to double the input channel
         # of the discriminator
         closure_mult = 2 if closure_name == 'paired_variant' else 1
@@ -121,17 +121,10 @@ def UnsupIR(ex):
         gen, optim_gen = create_generator(device=device, nc=nc, corruption=corruption)
         dis, optim_dis = create_discriminator(device=device, nc=nc * closure_mult)
         
-        try:
-            #gen.load_state_dict(torch.load("latest_gen.pth"))
-            pass
-        except:
-            print("Couldnt load pretrained generator")
-            
-        try:
-            #dis.load_state_dict(torch.load("latest_dis.pth"))
-            pass
-        except:
-            print("Couldnt load pretrained discriminator")
+        # load pretrained models, if any
+        if gen_path or dis_path:
+            gen.load_state_dict(torch.load(gen_path))
+            dis.load_state_dict(torch.load(dis_path))
 
         modules = {
             'gen': gen,
