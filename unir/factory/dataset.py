@@ -17,7 +17,7 @@ dataset_default = {
         'num_workers': 8,
     },
     'celebA': {
-        'filename': "data/img_align_celeba/img_align_celeba",
+        'filename': "/content/drive/MyDrive/CS7643-GroupProject/data/img_align_celeba/img_align_celeba",
         'nc': 3,
         'im_size': 64,
     },
