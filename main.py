@@ -63,10 +63,9 @@ def config():
     create_scheduler = lr_scheduler_factory.lr_scheduler(ex)
 
 
-def write_epoch_num_file(epoch_num):
+def write_epoch_num_file(path, epoch_num):
     """Used to record the last achieved epoch when saving models"""
-    fn = "/content/drive/MyDrive/CS7643-GroupProject/UNIR/epoch_num.txt"
-    with open(fn, "w") as f:
+    with open(path, "w") as f:
         f.write(str(epoch_num))
 
 @ex.automain
@@ -158,5 +157,5 @@ def main(_run, nepochs, niter, device, _config, create_datasets, create_modules,
         # Save models
         torch.save(mods['gen'].state_dict(), gen_out_path or exp_dir + "latest_gen.pth")
         torch.save(mods['dis'].state_dict(), dis_out_path or exp_dir + "latest_dis.pth")
-        write_epoch_num_file(epoch)
+        write_epoch_num_file(exp_dir + "epoch_num.txt", epoch)
         print("Models saved")
