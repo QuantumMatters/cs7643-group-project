@@ -7,6 +7,7 @@ from PIL import Image
 from torch.utils.data.dataset import Dataset
 
 import numpy as np
+import torch
 
 
 def pil_loader(path):
@@ -20,11 +21,11 @@ class CloudSatLoader(Dataset):
         self.data_dir = filename
         # Get the data file names
         if is_train:
-            self.datafiles_clear = glob.glob(self.data_dir + '/clear' + '/?[4-6]*.jpg')
-            self.datafiles_cloudy = glob.glob(self.data_dir + '/cloudy' + '/?[4-6]*.jpg')
+            self.datafiles_clear = glob.glob(self.data_dir + '/clear' + '/?[0-5]*.jpg')
+            self.datafiles_cloudy = glob.glob(self.data_dir + '/cloudy' + '/?[0-5]*.jpg')
         else:
-            train_clear = glob.glob(self.data_dir + '/clear' + '/?[4-6]*.jpg')
-            train_cloudy = glob.glob(self.data_dir + '/cloudy' + '/?[4-6]*.jpg')
+            train_clear = glob.glob(self.data_dir + '/clear' + '/?[0-5]*.jpg')
+            train_cloudy = glob.glob(self.data_dir + '/cloudy' + '/?[0-5]*.jpg')
             all_clear = glob.glob(self.data_dir + '/clear/*.jpg')
             all_cloudy = glob.glob(self.data_dir + '/cloudy/*.jpg')
 
@@ -44,19 +45,27 @@ class CloudSatLoader(Dataset):
 
     def __getitem__(self, index):
 
-        x_real = self.datafiles_clear[index]
+        batch_file = self.datafiles_clear[index]
+        try:
+            x_real = pil_loader(batch_file)
+        except:
+            return None
         x_real = self.transforms(x_real)
         x_measurement = x_real.unsqueeze(0)
 
         #meas = self.measurement.measure(x_measurement, device='cpu', seed=index) #Changed device to Cuda?
         dict_var = {
             'sample': x_real,
-            'mask': [None]
+            'mask': [[None]]
         }
         #dict_var.update(meas)
         if 'mask' in dict_var:
-            dict_var['mask'] = dict_var['mask'][0]
-        x_cloudy = self.datafiles_cloudy[index]
+            dict_var['mask'] = torch.tensor([0])
+        batch_cloudy= self.datafiles_cloudy[index]
+        try:
+            x_cloudy = pil_loader(batch_cloudy)
+        except:
+            return None
         x_cloudy = self.transforms(x_cloudy)
         dict_var["measured_sample"] =  x_cloudy # this is the "corrupted" file
         return dict_var

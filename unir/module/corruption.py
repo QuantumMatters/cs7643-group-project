@@ -147,8 +147,11 @@ class Cloudy(object):
         super().__init__()
 
     def sample_theta(self, im_shape, seed=None):
+        s = np.random.RandomState(seed)
+        x = np.zeros(im_shape, dtype='f')
+        x[:] = s.randn(*x.shape)
 
-        return None
+        return x * self.noise_variance
 
     def measure(self, x, device, theta=None, seed=None):
         x_measured = x.clone()
@@ -158,7 +161,6 @@ class Cloudy(object):
             noise = torch.tensor(noise, device=device, dtype=torch.float32, requires_grad=False)
         else:
             noise = theta
-
         return {
             "theta": noise,
             "measured_sample": None,
