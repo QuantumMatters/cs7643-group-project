@@ -25,13 +25,13 @@ warnings.filterwarnings("ignore")
 
 ex = Experiment('unsup')
 
-def save_checkpoint(state, is_best, exp_dir, filename='checkpoint.pth.tar'):
-    path = os.path.join(exp_dir, filename)
+def save_checkpoint(state, is_best, exp_dir, run_id, filename='checkpoint.pth.tar'):
+    path = os.path.join(exp_dir, f"{run_id}/{filename}")
     try:
         torch.save(state, path)
         logging.info('saving to {}...'.format(path))
         if is_best:
-            shutil.copyfile(path, os.path.join(exp_dir, 'model_best.pth.tar'))
+            shutil.copyfile(path, os.path.join(exp_dir, f'{run_id}/model_best.pth.tar'))
     except:
         logging.warning('saving to {} FAILED'.format(path))
 
@@ -90,7 +90,7 @@ def main(_run, nepochs, niter, device, _config, create_datasets, create_modules,
     best_mse = float('inf')
 
     # create a file to record losses and write the header
-    with open(exp_dir + "/losses.csv", "w") as f:
+    with open(f"{exp_dir}/{_run._id}/losses.csv", "w") as f:
         f.write("epoch,"
                 "train_loss_G,"
                 "train_loss_D,"
@@ -163,19 +163,13 @@ def main(_run, nepochs, niter, device, _config, create_datasets, create_modules,
 
             meters, images = closure.step()
             ims = torch.cat([v for k, v in images.items() if v.dim() == 4 and v.shape[1] in [1, 3]])
-            path = exp_dir + '/' + split + '_' + str(epoch) + '.png'
-            if epoch%50 ==0:
-              vutils.save_image(ims, path, nrow=dl.batch_size)
-              logger.info("saving images in {path}".format(path=path))
-            else:
-              pass
-            #try:
-                #vutils.save_image(ims, path, scale_each=True, normalize=True, nrow=dl.batch_size)
-                #logger.info("saving images in {path}".format(path=path))
-            #except:
-                #logger.warning("SAVING IMAGES FAILED")
+            path = f"{exp_dir}/{_run._id}/{split}_{epoch}.png"
+            # if epoch%50 ==0:
+            if True:
+                with torch.no_grad():
+                    vutils.save_image(ims, path, scale_each=True, normalize=True, nrow=dl.batch_size)
+                logger.info("saving images in {path}".format(path=path))
 
-                #pass
             string_to_print = '*** '
             for name, v in meters.items():
                 tag = 'meters' + '/' + name + '/' + split
@@ -191,16 +185,16 @@ def main(_run, nepochs, niter, device, _config, create_datasets, create_modules,
                     'epoch': epoch + 1,
                     'state_dict': mods['gen'].state_dict(),
                     'best_MSE': best_mse,
-                }, is_best, exp_dir)
+                }, is_best, _run._id, exp_dir)
 
         # Save models
-        torch.save(mods['gen'].state_dict(), gen_out_path or exp_dir + "/latest_gen.pth")
-        torch.save(mods['dis'].state_dict(), dis_out_path or exp_dir + "/latest_dis.pth")
-        write_epoch_num_file(exp_dir + "/epoch_num.txt", epoch)
+        torch.save(mods['gen'].state_dict(), gen_out_path or f"{exp_dir}/{_run._id}/latest_gen.pth")
+        torch.save(mods['dis'].state_dict(), dis_out_path or f"{exp_dir}/{_run._id}/latest_dis.pth")
+        write_epoch_num_file(f"{exp_dir}/{_run._id}/epoch_num_.txt", epoch)
         print("Models saved")
 
         # write losses to file
-        with open(exp_dir + "/losses.csv", "a") as f:
+        with open(f"{exp_dir}/{_run._id}/losses.csv", "a") as f:
             f.write("{epoch},"
                     "{train_loss_Gs.avg:.3f},"
                     "{train_loss_Ds.avg:.3f},"
