@@ -164,8 +164,7 @@ def main(_run, nepochs, niter, device, _config, create_datasets, create_modules,
             meters, images = closure.step()
             ims = torch.cat([v for k, v in images.items() if v.dim() == 4 and v.shape[1] in [1, 3]])
             path = f"{exp_dir}/{_run._id}/{split}_{epoch}.png"
-            # if epoch%50 ==0:
-            if True:
+            if epoch%50 ==0:
                 with torch.no_grad():
                     vutils.save_image(ims, path, scale_each=True, normalize=True, nrow=dl.batch_size)
                 logger.info("saving images in {path}".format(path=path))
