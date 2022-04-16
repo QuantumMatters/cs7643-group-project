@@ -6,6 +6,7 @@ from unir.dataset.celebA import CelebALoader
 from unir.dataset.lsun import LSUNLoader
 from unir.dataset.recipe import RecipeLoader
 from unir.dataset.mnist import MNISTLoader
+from unir.dataset.CloudSat import CloudSatLoader
 from unir.module.corruption import *
 
 logging.basicConfig(level=logging.INFO)
@@ -36,6 +37,11 @@ dataset_default = {
         'nc': 3,
         'im_size': 64,
     },
+    'satellite': {
+        'filename': "...",
+        'nc': 3,
+        'im_size': 256,
+    }
 }
 
 dataset_funcs = {
@@ -43,6 +49,7 @@ dataset_funcs = {
     'LSUN': LSUNLoader,
     'recipe': RecipeLoader,
     'MNIST': MNISTLoader,
+    'satellite': CloudSatLoader
 }
 
 corruption_config = {
@@ -61,12 +68,15 @@ corruption_config = {
         'conv_size': 5,
         'noise_variance': 0.3,
     },
+    'cloud': {
+    },
 }
 corruption_funcs = {
     "keep_patch": KeepPatch,
     "remove_pix": RemovePixel,
     "remove_pix_dark": RemovePixelDark,
     "conv_noise": ConvNoise,
+    "cloud": Cloudy
 }
 
 

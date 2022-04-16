@@ -7,6 +7,7 @@ from PIL import Image
 from torch.utils.data.dataset import Dataset
 
 import numpy as np
+import torch
 
 
 def pil_loader(path):
@@ -17,17 +18,25 @@ def pil_loader(path):
 
 class CloudSatLoader(Dataset):
     def __init__(self, filename: str, is_train: bool = True, measurement=None):
+        self.data_dir = filename
         # Get the data file names
         if is_train:
-            self.data = np.load("{}/training.npy".format(self.data_dir))
+            self.datafiles_clear = glob.glob(self.data_dir + '/clear' + '/?[0-5]*.jpg')
+            self.datafiles_cloudy = glob.glob(self.data_dir + '/cloudy' + '/?[0-5]*.jpg')
         else:
-            self.data = np.load("{}/test.npy".format(self.data_dir))
+            train_clear = glob.glob(self.data_dir + '/clear' + '/?[0-5]*.jpg')
+            train_cloudy = glob.glob(self.data_dir + '/cloudy' + '/?[0-5]*.jpg')
+            all_clear = glob.glob(self.data_dir + '/clear/*.jpg')
+            all_cloudy = glob.glob(self.data_dir + '/cloudy/*.jpg')
 
-        self.total = len(self.datafiles)
+            self.datafiles_clear = list(set(all_clear) - set(train_clear))
+            self.datafiles_cloudy = list(set(all_cloudy) - set(train_cloudy))
+
+        self.total = len(self.datafiles_clear)
         print("USING CloudSat")
-        self.output_height = 64 #Change this
-        self.output_width = 64 #Change this
-        self.measurement = measurement
+        self.output_height = 256
+        self.output_width = 256
+        self.measurement = None
         self.transforms = transforms.Compose([
             transforms.Resize([self.output_height, self.output_width], 2),
             transforms.ToTensor(),
@@ -36,18 +45,29 @@ class CloudSatLoader(Dataset):
 
     def __getitem__(self, index):
 
-        x_real = self.datafiles[index]
+        batch_file = self.datafiles_clear[index]
+        try:
+            x_real = pil_loader(batch_file)
+        except:
+            return None
         x_real = self.transforms(x_real)
         x_measurement = x_real.unsqueeze(0)
 
-        meas = self.measurement.measure(x_measurement, device='cpu', seed=index) #Changed device to Cuda?
+        #meas = self.measurement.measure(x_measurement, device='cpu', seed=index) #Changed device to Cuda?
         dict_var = {
             'sample': x_real,
+            'mask': [[None]]
         }
-        dict_var.update(meas)
+        #dict_var.update(meas)
         if 'mask' in dict_var:
-            dict_var['mask'] = dict_var['mask'][0]
-        dict_var["measured_sample"] = dict_var["measured_sample"][0]  # because the dataloader add a dimension
+            dict_var['mask'] = torch.tensor([0])
+        batch_cloudy= self.datafiles_cloudy[index]
+        try:
+            x_cloudy = pil_loader(batch_cloudy)
+        except:
+            return None
+        x_cloudy = self.transforms(x_cloudy)
+        dict_var["measured_sample"] =  x_cloudy # this is the "corrupted" file
         return dict_var
 
     def __len__(self):
