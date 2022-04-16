@@ -34,9 +34,9 @@ class CloudSatLoader(Dataset):
 
         self.total = len(self.datafiles_clear)
         print("USING CloudSat")
-        self.output_height = 256
-        self.output_width = 256
-        self.measurement = None
+        self.output_height = 64
+        self.output_width = 64
+        self.measurement = measurement
         self.transforms = transforms.Compose([
             transforms.Resize([self.output_height, self.output_width], 2),
             transforms.ToTensor(),
@@ -53,21 +53,21 @@ class CloudSatLoader(Dataset):
         x_real = self.transforms(x_real)
         x_measurement = x_real.unsqueeze(0)
 
-        #meas = self.measurement.measure(x_measurement, device='cpu', seed=index) #Changed device to Cuda?
-        dict_var = {
-            'sample': x_real,
-            'mask': [[None]]
-        }
-        #dict_var.update(meas)
-        if 'mask' in dict_var:
-            dict_var['mask'] = torch.tensor([0])
         batch_cloudy= self.datafiles_cloudy[index]
         try:
             x_cloudy = pil_loader(batch_cloudy)
         except:
             return None
         x_cloudy = self.transforms(x_cloudy)
-        dict_var["measured_sample"] =  x_cloudy # this is the "corrupted" file
+
+        meas = self.measurement.measure(x_measurement, device='cpu', x_measured=x_cloudy, seed=index) 
+        dict_var = {
+            'sample': x_real,
+        }
+        dict_var.update(meas)
+        dict_var['mask'] = torch.tensor([0])
+    
+        #dict_var["measured_sample"] = dict_var["measured_sample"][0]
         return dict_var
 
     def __len__(self):
