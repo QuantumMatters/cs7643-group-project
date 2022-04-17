@@ -31,27 +31,12 @@ class UnsupervisedImageReconstruction(Closure):
         measure_dict = self.measurement.measure(self.fake_sample, device=self.device)
         self.measured_fake_sample = measure_dict["measured_sample"]
 
-        with torch.no_grad():
-            pred_real = self.netD(self.measured_sample)
-            pred_fake = self.netD(self.fake_sample)
-
-        self.loss_G = self.prior_loss(pred_fake, True)
         if self.backloss_measurements > 0:
             self.fake_sample_back = self.netG(self.measured_fake_sample)
             self.fake_measured_sample_back = self.measurement.measure(self.fake_sample_back, device=self.device,
                                                                       theta=measure_dict["theta"])["measured_sample"]
-            loss_back_measurements = self.likelihood_loss(self.fake_measured_sample_back,
-                                                          self.measured_fake_sample.detach())
-            self.loss_G = self.loss_G + self.backloss_measurements * loss_back_measurements
 
         self.loss_MSE = self.likelihood_loss(self.fake_sample, self.sample)
-
-        # Real
-        loss_D_real = self.prior_loss(pred_real, True)
-        # Fake
-        loss_D_fake = self.prior_loss(pred_fake, False)
-        # Combined loss
-        self.loss_D = (loss_D_real + loss_D_fake) * 0.5
         
         return input
 

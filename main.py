@@ -89,17 +89,6 @@ def main(_run, nepochs, niter, device, _config, create_datasets, create_modules,
     logger.info('### Begin Training ###')
     best_mse = float('inf')
 
-    # create a file to record losses and write the header
-    with open(f"{exp_dir}/{_run._id}/losses.csv", "w") as f:
-        f.write("epoch,"
-                "train_loss_G,"
-                "train_loss_D,"
-                "train_loss_MSE,"
-                "test_loss_G,"
-                "test_loss_D,"
-                "test_loss_MSE\n"
-            )
-
     start = starting_epoch or 1
     for epoch in range(start, nepochs + 1):
 
@@ -191,17 +180,3 @@ def main(_run, nepochs, niter, device, _config, create_datasets, create_modules,
         torch.save(mods['dis'].state_dict(), dis_out_path or f"{exp_dir}/{_run._id}/latest_dis.pth")
         write_epoch_num_file(f"{exp_dir}/{_run._id}/epoch_num_.txt", epoch)
         print("Models saved")
-
-        # write losses to file
-        with open(f"{exp_dir}/{_run._id}/losses.csv", "a") as f:
-            f.write("{epoch},"
-                    "{train_loss_Gs.avg:.3f},"
-                    "{train_loss_Ds.avg:.3f},"
-                    "{train_loss_MSEs.avg:.3f},"
-                    "{test_loss_Gs.avg:.3f},"
-                    "{test_loss_Ds.avg:.3f},"
-                    "{test_loss_MSEs.avg:.3f}\n".format(
-                        epoch=epoch,
-                        train_loss_Gs=train_loss_Gs, train_loss_Ds=train_loss_Ds,
-                        train_loss_MSEs=train_loss_MSEs, test_loss_Gs=test_loss_Gs, 
-                        test_loss_Ds=test_loss_Ds, test_loss_MSEs=test_loss_MSEs))
