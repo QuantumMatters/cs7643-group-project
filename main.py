@@ -26,12 +26,12 @@ warnings.filterwarnings("ignore")
 ex = Experiment('unsup')
 
 def save_checkpoint(state, is_best, exp_dir, run_id, filename='checkpoint.pth.tar'):
-    path = os.path.join(exp_dir, f"{run_id}/{filename}")
+    path = os.path.join(exp_dir, run_id, filename)
     try:
         torch.save(state, path)
         logging.info('saving to {}...'.format(path))
         if is_best:
-            shutil.copyfile(path, os.path.join(exp_dir, f'{run_id}/model_best.pth.tar'))
+            shutil.copyfile(path, os.path.join(exp_dir, run_id, 'model_best.pth.tar'))
     except:
         logging.warning('saving to {} FAILED'.format(path))
 
@@ -164,7 +164,7 @@ def main(_run, nepochs, niter, device, _config, create_datasets, create_modules,
             meters, images = closure.step()
             ims = torch.cat([v for k, v in images.items() if v.dim() == 4 and v.shape[1] in [1, 3]])
             path = f"{exp_dir}/{_run._id}/{split}_{epoch}.png"
-            if epoch%50 ==0:
+            if epoch%50 == 0:
                 with torch.no_grad():
                     vutils.save_image(ims, path, scale_each=True, normalize=True, nrow=dl.batch_size)
                 logger.info("saving images in {path}".format(path=path))
