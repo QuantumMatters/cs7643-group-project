@@ -21,9 +21,9 @@ class CloudSatLoader(Dataset):
         self.data_dir = filename
         # Get the data file names
         if is_train:
-            self.datafiles_clear = glob.glob(self.data_dir + '/clear' + '/?[0-5]*.jpg')
+            self.datafiles_clear = sorted(glob.glob(self.data_dir + '/clear' + '/?[0-5]*.jpg'))
             cloudy = glob.glob(self.data_dir + '/cloudy' + '/?[0-5]*.jpg')
-            self.datafiles_cloudy = [i for i in cloudy if '_ir' not in i]
+            self.datafiles_cloudy = sorted([i for i in cloudy if '_ir' not in i])
             assert(len(self.datafiles_clear) == len(self.datafiles_cloudy))
 
         else:
@@ -34,8 +34,8 @@ class CloudSatLoader(Dataset):
 
             ir_cloudy = [i for i in all_cloudy if '_ir' in i]
 
-            self.datafiles_clear = list(set(all_clear) - set(train_clear))
-            self.datafiles_cloudy = list(set(all_cloudy) - set(train_cloudy) - set(ir_cloudy))
+            self.datafiles_clear = sorted(list(set(all_clear) - set(train_clear)))
+            self.datafiles_cloudy = sorted(list(set(all_cloudy) - set(train_cloudy) - set(ir_cloudy)))
 
             assert(len(self.datafiles_clear) == len(self.datafiles_cloudy))
 
