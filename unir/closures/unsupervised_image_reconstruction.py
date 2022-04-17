@@ -84,10 +84,7 @@ class UnsupervisedImageReconstruction(Closure):
         self.netD_optim.zero_grad()
 
         pred_real = self.netD(self.measured_sample)
-        with torch.no_grad():
-          pred_fake = self.netD(self.fake_sample)
-          #orignal line of code:
-          #pred_fake = self.netD(self.fake_sample.detach())
+        pred_fake = self.netD(self.fake_sample.detach().contiguous())
 
         # Real
         loss_D_real = self.prior_loss(pred_real, True)
