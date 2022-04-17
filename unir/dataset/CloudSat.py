@@ -22,15 +22,22 @@ class CloudSatLoader(Dataset):
         # Get the data file names
         if is_train:
             self.datafiles_clear = glob.glob(self.data_dir + '/clear' + '/?[0-5]*.jpg')
-            self.datafiles_cloudy = glob.glob(self.data_dir + '/cloudy' + '/?[0-5]*.jpg')
+            cloudy = glob.glob(self.data_dir + '/cloudy' + '/?[0-5]*.jpg')
+            self.datafiles_cloudy = [i for i in cloudy if '_ir' not in i]
+            assert(len(self.datafiles_clear) == len(self.datafiles_cloudy))
+
         else:
             train_clear = glob.glob(self.data_dir + '/clear' + '/?[0-5]*.jpg')
             train_cloudy = glob.glob(self.data_dir + '/cloudy' + '/?[0-5]*.jpg')
             all_clear = glob.glob(self.data_dir + '/clear/*.jpg')
             all_cloudy = glob.glob(self.data_dir + '/cloudy/*.jpg')
 
+            ir_cloudy = [i for i in all_cloudy if '_ir' in i]
+
             self.datafiles_clear = list(set(all_clear) - set(train_clear))
-            self.datafiles_cloudy = list(set(all_cloudy) - set(train_cloudy))
+            self.datafiles_cloudy = list(set(all_cloudy) - set(train_cloudy) - set(ir_cloudy))
+
+            assert(len(self.datafiles_clear) == len(self.datafiles_cloudy))
 
         self.total = len(self.datafiles_clear)
         print("USING CloudSat")
