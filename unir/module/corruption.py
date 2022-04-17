@@ -1,7 +1,8 @@
 import numpy as np
 import torch
-import warnings
-warnings.filterwarnings(action='ignore')
+import torchvision.transforms as transforms
+
+
 
 class KeepPatch(object):
     def __init__(self, size_percent=0.5, im_size=64):
@@ -151,17 +152,37 @@ class Cloudy(object):
         x = np.zeros(im_shape, dtype='f')
         x[:] = s.randn(*x.shape)
 
-        return x * self.noise_variance
+        return x * 0.3
 
-    def measure(self, x, device, theta=None, seed=None):
-        x_measured = x.clone()
+    def un_normalize(self, x):
+        mean = torch.tensor([0.5, 0.5, 0.5])
+        std = torch.tensor([0.5, 0.5, 0.5])
+        unnormalize = transforms.Normalize((-mean / std).tolist(), (1.0 / std).tolist())
+        return unnormalize(x)*255
 
+    def measure(self, x, device, x_measured=None, theta=None, seed=None):
+
+        #if theta is None:
+           # noise = self.sample_theta(im_shape=x.shape, seed=seed)
+            #noise = torch.tensor(noise, device=device, dtype=torch.float32, requires_grad=False)
+        #else:
+            #noise = theta
+        
         if theta is None:
-            noise = self.sample_theta(im_shape=x.shape, seed=seed)
-            noise = torch.tensor(noise, device=device, dtype=torch.float32, requires_grad=False)
+          torch.set_printoptions(profile="default")
+          x2 = x.detach().clone()
+          images = self.un_normalize(x2)
+          noise = images > 150.0
+          #noise = noise.float()
         else:
             noise = theta
+          
+            
+        mask = torch.tensor(noise, device=device, dtype=torch.bool, requires_grad=False)
+        if x_measured == None:
+            x_measured = x.clone()
+            x_measured[mask] = 0 
         return {
-            "theta": noise,
-            "measured_sample": None,
+            "theta": noise, 
+            "measured_sample": x_measured
         }

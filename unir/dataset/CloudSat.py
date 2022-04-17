@@ -22,21 +22,28 @@ class CloudSatLoader(Dataset):
         # Get the data file names
         if is_train:
             self.datafiles_clear = glob.glob(self.data_dir + '/clear' + '/?[0-5]*.jpg')
-            self.datafiles_cloudy = glob.glob(self.data_dir + '/cloudy' + '/?[0-5]*.jpg')
+            cloudy = glob.glob(self.data_dir + '/cloudy' + '/?[0-5]*.jpg')
+            self.datafiles_cloudy = [i for i in cloudy if '_ir' not in i]
+            assert(len(self.datafiles_clear) == len(self.datafiles_cloudy))
+
         else:
             train_clear = glob.glob(self.data_dir + '/clear' + '/?[0-5]*.jpg')
             train_cloudy = glob.glob(self.data_dir + '/cloudy' + '/?[0-5]*.jpg')
             all_clear = glob.glob(self.data_dir + '/clear/*.jpg')
             all_cloudy = glob.glob(self.data_dir + '/cloudy/*.jpg')
 
+            ir_cloudy = [i for i in all_cloudy if '_ir' in i]
+
             self.datafiles_clear = list(set(all_clear) - set(train_clear))
-            self.datafiles_cloudy = list(set(all_cloudy) - set(train_cloudy))
+            self.datafiles_cloudy = list(set(all_cloudy) - set(train_cloudy) - set(ir_cloudy))
+
+            assert(len(self.datafiles_clear) == len(self.datafiles_cloudy))
 
         self.total = len(self.datafiles_clear)
         print("USING CloudSat")
-        self.output_height = 256
-        self.output_width = 256
-        self.measurement = None
+        self.output_height = 64
+        self.output_width = 64
+        self.measurement = measurement
         self.transforms = transforms.Compose([
             transforms.Resize([self.output_height, self.output_width], 2),
             transforms.ToTensor(),
@@ -53,21 +60,21 @@ class CloudSatLoader(Dataset):
         x_real = self.transforms(x_real)
         x_measurement = x_real.unsqueeze(0)
 
-        #meas = self.measurement.measure(x_measurement, device='cpu', seed=index) #Changed device to Cuda?
-        dict_var = {
-            'sample': x_real,
-            'mask': [[None]]
-        }
-        #dict_var.update(meas)
-        if 'mask' in dict_var:
-            dict_var['mask'] = torch.tensor([0])
         batch_cloudy= self.datafiles_cloudy[index]
         try:
             x_cloudy = pil_loader(batch_cloudy)
         except:
             return None
         x_cloudy = self.transforms(x_cloudy)
-        dict_var["measured_sample"] =  x_cloudy # this is the "corrupted" file
+
+        meas = self.measurement.measure(x_measurement, device='cpu', x_measured=x_cloudy, seed=index) 
+        dict_var = {
+            'sample': x_real,
+        }
+        dict_var.update(meas)
+        dict_var['mask'] = torch.tensor([0])
+    
+        #dict_var["measured_sample"] = dict_var["measured_sample"][0]
         return dict_var
 
     def __len__(self):
