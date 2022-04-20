@@ -6,7 +6,7 @@ from .closure import *
 
 class UnsupervisedImageReconstruction(Closure):
     def __init__(self, mods: dict, optims: dict, device: str, backloss_measurements: float = 0., measurement=None,
-                 dict_scheduler=None):
+                 dict_scheduler=None, k=1, debug=False):
 
         assert (measurement is not None)
         self.measurement = measurement
@@ -22,6 +22,9 @@ class UnsupervisedImageReconstruction(Closure):
         self.lr_gen = self.dict_scheduler['gen'].get_lr()[0]
         self.lr_dis = self.dict_scheduler['dis'].get_lr()[0]
         self._register_metrics(['loss_*', 'lr_*'])
+        self.k = k
+        self.c = 1
+        self.debug = debug
 
     def _forward(self, input: dict):
         self.sample = input["sample"]
@@ -45,8 +48,11 @@ class UnsupervisedImageReconstruction(Closure):
         self.netG_optim.zero_grad()
 
         # First, G(A) should fake the discriminator
-        pred_fake = self.netD(self.fake_sample)
+        pred_fake = self.netD(self.measured_fake_sample)  # should this be measured_fake_sample?
         self.loss_G = self.prior_loss(pred_fake, True)
+        if self.c % 40 == 0 and self.debug:
+            print(f"pred_fake (G): {pred_fake}")
+            print(f"loss_G (G): {self.loss_G}")
 
         if self.backloss_measurements > 0:
             loss_back_measurements = self.likelihood_loss(self.fake_measured_sample_back,
@@ -69,7 +75,7 @@ class UnsupervisedImageReconstruction(Closure):
         self.netD_optim.zero_grad()
 
         pred_real = self.netD(self.measured_sample)
-        pred_fake = self.netD(self.fake_sample.detach().contiguous())
+        pred_fake = self.netD(self.measured_fake_sample.detach().contiguous())
 
         # Real
         loss_D_real = self.prior_loss(pred_real, True)
@@ -77,6 +83,13 @@ class UnsupervisedImageReconstruction(Closure):
         loss_D_fake = self.prior_loss(pred_fake, False)
         # Combined loss
         self.loss_D = (loss_D_real + loss_D_fake) * 0.5
+        if self.c % 40 == 0 and self.debug:
+            print(f"pred_real (D): {pred_real}")
+            print(f"pred_fake (D): {pred_fake}")
+            print(f"loss_D_real (D): {loss_D_real}")
+            print(f"loss_D_fake (D): {loss_D_fake}")
+            print(f"loss_D (D): {self.loss_D}")
+
         # backward
         self.loss_D.backward()
         self.netD_optim.step()
@@ -84,5 +97,6 @@ class UnsupervisedImageReconstruction(Closure):
         return self.loss_D
 
     def _backward(self):
+        self.c += 1
         self._backward_G()
         self._backward_D()
