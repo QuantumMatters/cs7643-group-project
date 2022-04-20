@@ -198,7 +198,7 @@ class ResNetDiscriminator(nn.Module):
 
 
 class ResNetGenerator(nn.Module):
-    def __init__(self, ngf, self_attention=True, add_input=True,
+    def __init__(self, ngf, self_attention=True, add_input=False,
                  input_nc=3, output_nc=3):
         super().__init__()
         self.self_attention = self_attention
