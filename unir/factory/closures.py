@@ -3,6 +3,8 @@ from unir.utils.helpers import *
 
 closure_default_config = {
     'common': {
+        'k': 1,
+        'debug': False,
     },
     'unsup_ir': {
         'backloss_measurements': 2.,
