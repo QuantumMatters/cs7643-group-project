@@ -7,6 +7,7 @@ from unir.dataset.lsun import LSUNLoader
 from unir.dataset.recipe import RecipeLoader
 from unir.dataset.mnist import MNISTLoader
 from unir.dataset.CloudSat import CloudSatLoader
+from unir.dataset.CloudSat2 import CloudSatLoader2
 from unir.module.corruption import *
 
 logging.basicConfig(level=logging.INFO)
@@ -41,6 +42,11 @@ dataset_default = {
         'filename': "...",
         'nc': 3,
         'im_size': 256,
+    },
+    'satellite2': {
+        'filename': "...",
+        'nc': 3,
+        'im_size': 256,
     }
 }
 
@@ -49,7 +55,8 @@ dataset_funcs = {
     'LSUN': LSUNLoader,
     'recipe': RecipeLoader,
     'MNIST': MNISTLoader,
-    'satellite': CloudSatLoader
+    'satellite': CloudSatLoader,
+    'satellite2': CloudSatLoader2
 }
 
 corruption_config = {
