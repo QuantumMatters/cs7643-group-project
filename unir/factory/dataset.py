@@ -1,6 +1,6 @@
 import logging
 
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, RandomSampler
 
 from unir.dataset.celebA import CelebALoader
 from unir.dataset.lsun import LSUNLoader
@@ -16,6 +16,8 @@ dataset_default = {
     'common': {
         'batch_size': 16,
         'num_workers': 8,
+        'sample': False,
+        'seed': 0,
     },
     'celebA': {
         'filename': "/content/drive/MyDrive/CS7643-GroupProject/data/img_align_celeba/img_align_celeba",
@@ -117,30 +119,57 @@ def dataset(ex):
         kwargs = dataset.copy()
         batch_size = kwargs.pop('batch_size')
         num_workers = kwargs.pop('num_workers')
+        sample = kwargs.pop("sample")
         nc = kwargs.pop("nc")
         name = kwargs.pop('name')
         im_size = kwargs.pop('im_size')
+        seed = kwargs.pop('seed')
 
         corruption = create_corruption(im_size=im_size)
 
         ds = dataset_funcs[name](is_train=True, measurement=corruption, **kwargs)
         test_ds = dataset_funcs[name](is_train=False, measurement=corruption, **kwargs)
 
-        dl = DataLoader(dataset=ds,
-                        batch_size=batch_size,
-                        shuffle=True,
-                        drop_last=True,
-                        pin_memory=False,
-                        num_workers=num_workers,
-                        )
+        if sample:
+            logger.info(f"Training set will be randomly sampled with seed {seed}")
+            sampler = RandomSampler(ds, replacement=True, num_samples=batch_size)
+
+            # for reproducibility.
+            # see: https://pytorch.org/docs/stable/notes/randomness.html#dataloader
+            def seed_worker(worker_id):
+                worker_seed = torch.initial_seed() % 2**32
+                numpy.random.seed(worker_seed)
+                random.seed(worker_seed)
+
+            g = torch.Generator()
+            g.manual_seed(seed)
+
+            dl = DataLoader(dataset=ds,
+                            batch_size=batch_size,
+                            drop_last=True,
+                            pin_memory=False,
+                            num_workers=num_workers,
+                            sampler=sampler,
+                            worker_init_fn=seed_worker,
+                            generator=g
+                            )
+
+        else:
+            dl = DataLoader(dataset=ds,
+                            batch_size=batch_size,
+                            shuffle=True,
+                            drop_last=True,
+                            pin_memory=False,
+                            num_workers=num_workers,
+                            )
 
         test_dl = DataLoader(dataset=test_ds,
-                             batch_size=dataset['batch_size'],
-                             shuffle=False,
-                             drop_last=True,
-                             pin_memory=False,
-                             num_workers=dataset['num_workers'],
-                             )
+                            batch_size=dataset['batch_size'],
+                            shuffle=False,
+                            drop_last=True,
+                            pin_memory=False,
+                            num_workers=dataset['num_workers'],
+                            )
         logger.info("loaded in {} : \n \t \t Train {} images (num batch {})  \n \t \t Test  {} images  (num batch {})"
                     .format(dataset["filename"], len(ds), len(dl), len(test_ds), len(test_dl)))
 
