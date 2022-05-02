@@ -15,6 +15,13 @@ def pil_loader(path):
         img = Image.open(f)
         return img.convert('RGB') #RGB or Grey Scale? 
 
+def center_crop(x, crop_h, crop_w, resize_h=64, resize_w=64):
+    if crop_w is None:
+        crop_w = crop_h
+    h, w = x.shape[:2]
+    j = int(round((h - crop_h) / 2.))
+    i = int(round((w - crop_w) / 2.))
+    return resize(x[j:j + crop_h, i:i + crop_w], [resize_h, resize_w], mode='constant', anti_aliasing=True)
 
 class CloudSatLoader2(Dataset):
     def __init__(self, filename: str, is_train: bool = True, measurement=None):
@@ -39,6 +46,7 @@ class CloudSatLoader2(Dataset):
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
         ])
 
+    
     def __getitem__(self, index):
 
         batch_file = self.datafiles_clear[index]
@@ -46,6 +54,9 @@ class CloudSatLoader2(Dataset):
             x_real = pil_loader(batch_file)
         except:
             return None
+
+        cropped_image = center_crop(x_real, 256, 256, 64, 64)
+
         x_real = self.transforms(x_real)
         x_measurement = x_real.unsqueeze(0)
 
